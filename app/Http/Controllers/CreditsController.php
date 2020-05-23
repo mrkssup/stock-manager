@@ -109,6 +109,53 @@ class CreditsController extends Controller
     }
 
 
+    public function test (){
+
+        $data_array =array (
+            'tracking' =>
+            array (
+              'slug' => 'kerry-logistics',
+              'tracking_number' => '8803858799',
+              'title' => '',
+              'custom_fields' =>
+              array (
+                'product_name' => 'iPhone Case',
+                'product_price' => 'USD19.99',
+              ),
+            ),
+        );
+        $decode =json_decode($str);
+        print_r( $decode->tracking);
+        return 'ok';
+        $curl = curl_init();
+        curl_setopt_array($curl, array(
+        CURLOPT_URL => "https://api.aftership.com/v4/trackings",
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_ENCODING => "",
+        CURLOPT_MAXREDIRS => 10,
+        CURLOPT_TIMEOUT => 0,
+        CURLOPT_FOLLOWLOCATION => true,
+        CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
+        CURLOPT_CUSTOMREQUEST => "POST",
+        CURLOPT_POSTFIELDS =>"{\n    \"tracking\": {\n        \"slug\": \"kerry-logistics\",\n
+                                     \"tracking_number\": \"8303858799\",\n        \"title\": \"Hello Title\",\n
+                                     \"smses\": [\n            \"+18555072509\",\n            \"+18555072501\"\n        ],\n
+                                     \"emails\": [\n            \"email@yourdomain.com\",\n            \"another_email@yourdomain.com\"\n        ],\n
+                                     \"custom_fields\": {\n            \"product_name\": \"iPhone Case\",\n            \"product_price\": \"USD19.99\"\n        }\n    }\n}",
+        CURLOPT_HTTPHEADER => array(
+            "Content-Type: application/json",
+            "aftership-api-key: 64cfcd3c-cc28-4448-b0a1-fb8873edcd03",
+            "Content-Type: text/plain"
+         ),
+        ));
+
+        $response = curl_exec($curl);
+        curl_close($curl);
+        echo $response;
+        return 'ok';
+    }
+
+
 
     protected function product_stock($user_id,$stock_place_id)
     {

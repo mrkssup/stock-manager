@@ -63,7 +63,7 @@ class AddproductController extends Controller
                         'user_id' => $user_id,
                         'category_id' => $request->category_id
                     ]);
-                    if($request->hasFile('file')){    // ถ้ามีการอัพโหลดไฟล์
+                    if($request->has('file')){    // ถ้ามีการอัพโหลดไฟล์
                         $file =$request->file('file');
                         $file_name = $file->getClientOriginalName();
                         $file_ext = strtolower($file->getClientOriginalExtension());

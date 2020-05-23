@@ -46,7 +46,7 @@
 
                                 <div class="">
                                     <div class="table-responsive">
-                                        <table id="products_table" class="table  text-center">
+                                        <table id="products_table" class="table">
                                             <thead>
                                                 <tr>
                                                     <th scope="col">#</th>
@@ -55,6 +55,7 @@
                                                     <th scope="col">รหัสสินค้า</th>
                                                     <th scope="col">มูลค่า</th>
                                                     <th scope="col">สถานะ</th>
+                                                    <th scope="col">Tracking number</th>
                                                     <th scope="col">การจัดการ</th>
                                                 </tr>
                                             </thead>
@@ -64,13 +65,23 @@
                                                         <td>{{ $sell['order'] }}</td>
                                                         <td><a href="/sell/{{ $sell['sell_id'] }}">{{ $sell['sell_code'] }}</a></td>
                                                         <td>{{ $sell['sell_date'] }}</td>
-                                                        {<td><a href="/product/{{ $sell['product_id'] }}">{{ $sell['product_code'] }}</a></td>
+                                                        <td><a href="/product/{{ $sell['product_id'] }}">{{ $sell['product_code'] }}</a></td>
                                                         <td>{{ $sell['sell_total'] }}</td>
-                                                        @if( $sell['sell_status'] == 1)
+                                                        @if( $sell['sell_status'] == 2)
                                                             <td>สำเร็จ</td>
+                                                            <td><div class="as-track-button col-md-1" data-size="small" data-domain="stmanage.aftership.com" data-tracking-number={{ $sell['tracking_number'] }}></div></td>
+                                                            <td>-</td>
+                                                        @elseif( $sell['sell_status'] == 1)
+                                                            <td>รอโอนสินค้า</td>
+                                                            <td>-</td>
+                                                            <td>-</td>
+                                                        @elseif( $sell['sell_status'] == 9)
+                                                            <td>ยกเลิก</td>
+                                                            <td>-</td>
                                                             <td>-</td>
                                                         @else
-                                                            <td>รอโอนสินค้า</td>
+                                                            <td>กำลังดำเนินการ</td>
+                                                            <td>-</td>
                                                             <td>
                                                                 <div class="btn-group">
                                                                     <button type="button" class="btn bg-white _r_btn" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
@@ -79,7 +90,8 @@
                                                                         <span class="_dot _r_block-dot bg-success"></span>
                                                                     </button>
                                                                     <div class="dropdown-menu" x-placement="bottom-start">
-                                                                        <a class="dropdown-item" id ="edit-sell" data-id={{ $sell['sell_id'] }} data-name={{ $sell['sell_code'] }} data-stock={{ $sell['sell_stock'] }}  data-toggle="modal"  href="#editsell">เปลี่ยนสถานะ</a></i>
+                                                                        <a class="dropdown-item" id ="edit-sell" data-id={{ $sell['sell_id'] }} data-name={{ $sell['sell_code'] }} data-stock={{ $sell['sell_stock'] }}  data-toggle="modal"  href="#editsell">โอนสินค้าออก</a></i>
+                                                                        <a class="dropdown-item" id ="cancel-sell" data-id={{ $sell['sell_id'] }} data-name={{ $sell['sell_code'] }} data-stock={{ $sell['sell_stock'] }}  data-toggle="modal"  href="#cancelsell">ยกเลิก</a></i>
                                                                         <a class="dropdown-item" href="/editsell/{{ $sell['sell_id'] }}">แก้ไข</a>
                                                                     </div>
                                                                 </div>
@@ -128,10 +140,46 @@
                         </div>
                     </div>
                 </div>
+                 {{---------------------------------------------cancelpurchase----------------------------------------------------------------}}
+                 <div class="modal fade" id="cancelsell" tabindex="-1" role="dialog" aria-labelledby="cancelsellLabel" aria-hidden="true">
+                    <div class="modal-dialog" role="document">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title" id="deleteModalh5">ยกเลิกรายการขายสินค้า</h5>
+                                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                    <span aria-hidden="true">&times;</span>
+                                </button>
+                            </div>
+                            <div class="modal-body">
+                                <form method="POST" action="{{ url('cancelsell') }}">
+                                    {{ csrf_field() }}
+                                    <div class="form-group row">
+                                        <label for="inputsell_code_name" class="col-sm-4 col-form-label">รายการเลขที่</label>
+                                        <div class="col-sm-8">
+                                            <input type="hidden" id="put" name="_method" value="PUT" />
+                                            <input type="hidden" id="cancell_sell_stock"  name="stock_place_id"  class="form-control" value="">
+                                            <input type="hidden" id="cancel_sell_id"  name="sell_id"  class="form-control" value="">
+                                            <input type="text" id="cancel_sell_code"  name="sell_code"  class="form-control" value="">
+                                        </div>
+                                    </div>
+                                    <div class="form-group row">
+                                        <label for="inputcategory_name" class="col-sm-8 col-form-label"> ท่านต้องการยกเลิกรายการขายสินค้าที่เลือกใช่หรือไม่</label>
+                                    </div>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-dismiss="modal">ยกเลิก</button>
+                                <button type="submit" class="btn btn-primary">ยืนยัน</button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
 
                 </div>
 
+
 @endsection
+<div id="as-root"></div><script>(function(e,t,n){var r,i=e.getElementsByTagName(t)[0];if(e.getElementById(n))return;r=e.createElement(t);r.id=n;r.src="https://button.aftership.com/all.js";i.parentNode.insertBefore(r,i)})(document,"script","aftership-jssdk")</script>
 <script>
     var msg = '{{Session::get('alert')}}';
     var exist = '{{Session::has('alert')}}';
@@ -139,7 +187,7 @@
       alert(msg);
     }
 </script>
-<script src="http://code.jquery.com/jquery-1.11.0.min.js"></script>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
 <script>
     $(document).on("click", "#edit-sell", function (e) {
     e.preventDefault();
@@ -150,6 +198,18 @@
     $("#sell_id").val(Id);
     $("#sell_code").val(Code);
     $("#sell_stock").val(Stock);
+    });
+</script>
+<script>
+    $(document).on("click", "#cancel-sell", function (e) {
+    e.preventDefault();
+    var _self = $(this);
+    var Id = _self.data('id');
+    var Code = _self.data('name');
+    var Stock = _self.data('stock');
+    $("#cancel_sell_id").val(Id);
+    $("#cancel_sell_code").val(Code);
+    $("#cancel_sell_stock").val(Stock);
     });
 </script>
 

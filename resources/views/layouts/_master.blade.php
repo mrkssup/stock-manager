@@ -35,12 +35,17 @@
 
 
         <div class="app-admin-wrap layout-sidebar-large clearfix">
-            @include('layouts._header-menu')
-
+            @if (Session::get('role')==99)
+                @include('layouts._admin-header-menu')
+            @else
+                @include('layouts._header-menu')
+            @endif
             <!-- ============ end of header menu ============= -->
-
-            @include('layouts._sidebar')
-
+            @if (Session::get('role')==99)
+                @include('layouts._admin-sidebar')
+            @else
+                @include('layouts._sidebar')
+            @endif
             <!-- ============ end of left sidebar ============= -->
 
             <!-- ============ Body content start ============= -->
@@ -55,7 +60,7 @@
         <!--=============== End app-admin-wrap ================-->
 
         <!-- ============ Search UI Start ============= -->
-        @include('layouts._search')
+        {{-- @include('layouts._search') --}}
         <!-- ============ Search UI End ============= -->
 
         <!-- ============ Large Sidebar Layout End ============= -->

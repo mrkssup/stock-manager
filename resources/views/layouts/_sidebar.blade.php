@@ -48,7 +48,7 @@
                 </a>
             </li>
             <li class="nav-item">
-                <a href="#">
+                <a href="/addsell">
                     <span class="item-name">สร้างรายการขาย</span>
                 </a>
             </li>

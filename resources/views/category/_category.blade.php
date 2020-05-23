@@ -56,7 +56,7 @@
                                                 <tr>
                                                         <td>{{ $cat['order'] }}</td>
                                                         <td><a href="/products?category={{ $cat['category_id'] }}">{{ $cat['category_name'] }}</a></td>
-                                                        <td>50</td>
+                                                        <td>{{ $cat['stock_number'] }}</td>
                                                         <td>
                                                             <div class="btn-group">
                                                                 <button type="button" class="btn bg-white _r_btn" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
@@ -178,7 +178,7 @@
       alert(msg);
     }
 </script>
-<script src="http://code.jquery.com/jquery-1.11.0.min.js"></script>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
 <script>
     $(document).on("click", "#edit-category", function (e) {
     e.preventDefault();

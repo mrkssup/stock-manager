@@ -21,17 +21,22 @@ class CategoryController extends Controller
 {
     public function index(Request $request)
     {
-        $user_id = '12';
+        $user_id = session('uid');
         $category = array();$i=0;
         $query_category = category::join('users','category.user_id','=','users.user_id')
-                        ->select('category.category_id','category.category_name')
+                        ->leftjoin('products','category.category_id','=','products.category_id')
+                        ->leftjoin('stocks','products.product_id','=','stocks.product_id')
+                        ->select('category.category_id','category.category_name'
+                        ,DB::raw('sum(stocks.stock_number) as stock_number'))
                         ->where('users.user_id', $user_id)
                         ->where('category.category_status', '1')
+                        ->groupBy('category.category_id')
                         ->get();
         foreach($query_category as $key){
             $category[$i]['order'] = $i+1;
             $category[$i]['category_id'] = $key->category_id;
             $category[$i]['category_name'] = $key->category_name;
+            $category[$i]['stock_number'] = $key->stock_number;
             $i++;
         }
         return view('category._category')->with(['category' => $category]);
@@ -40,10 +45,10 @@ class CategoryController extends Controller
 
     public function search(Request $request)
     {
-        $user_id = '12';
+        $user_id = session('uid');
         $search = $request->search;
         $category = array();$i=0;
-        $query_category = category::select('category_id','category_name',)
+        $query_category = category::select('category_id','category_name')
                         ->where('user_id', $user_id)
                         ->where('category_name', 'LIKE' , '%'.$search.'%');
         $query_category = $query_category->get();
@@ -58,7 +63,7 @@ class CategoryController extends Controller
 
     public function store(Request $request)
     {
-        $user_id = '12';
+        $user_id = session('uid');
         if($user_id == ''){
             return redirect('/');
         }else{
@@ -93,7 +98,7 @@ class CategoryController extends Controller
 
     public function edit(Request $request)
     {
-        $user_id = '12';
+        $user_id = session('uid');
         if($user_id == ''){
             return redirect('/');
         }else{
@@ -125,7 +130,7 @@ class CategoryController extends Controller
 
     public function delete(Request $request)
     {
-        $user_id = '12';
+        $user_id = session('uid');
         if($user_id == ''){
             return redirect('/');
         }else{

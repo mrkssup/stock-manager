@@ -25,6 +25,10 @@ class AuthController extends Controller
           }else{
               $password = md5($request->password);
               $email = $request->username;
+              $check_mail = users::where('email','=',$email)->get();
+              if(count($check_mail)>0){
+                return redirect()->back()->with('errors' , "ข้อมูลอีเมล์ซ้ำ");
+              }
               $token = bin2hex(random_bytes(16));
               $request->merge(['password'=>$password]);
               $request->merge(['email'=>$email]);
@@ -57,6 +61,17 @@ class AuthController extends Controller
       }
     }
 
+    public function signin(Request $request)
+    {
+        $user_id = session('uid');
+        if($user_id == ''){
+            return view('sessions._signin');
+        }else{
+            return redirect('dashboard');
+        }
+
+    }
+
     public function login(Request $request)
     {
       $credentials = $request->only('username', 'password');
@@ -71,7 +86,13 @@ class AuthController extends Controller
         }else{
           session(['uid' => $authorize->user_id]);
           session(['fullname' => $authorize->first_name.' '.$authorize->last_name]);
-          return redirect('dashboard');
+          session(['role' => $authorize->role]);
+          if($authorize->role == 99){
+            return redirect('/admin/dashboard');
+          }else{
+            return redirect('dashboard');
+          }
+
         }
       }
     }

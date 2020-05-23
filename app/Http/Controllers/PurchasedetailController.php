@@ -29,11 +29,13 @@ class PurchasedetailController extends Controller
                         ->join('po_product','purchase.purchase_id','=','po_product.purchase_id')
                         ->join('stock_places','purchase.purchase_stock','=','stock_places.stock_place_id')
                         ->join('products','po_product.product_id','=','products.product_id')
+                        ->join('customer','purchase.customer_id','=','customer.customer_id')
                         ->select('purchase.purchase_id','purchase.purchase_code','purchase.purchase_date'
                         ,'products.product_code','products.product_id','purchase.purchase_stock','stock_places.stock_place_name'
                         ,'products.product_name','purchase.purchase_total','purchase.purchase_reference','purchase.purchase_status_tranfer'
                         ,'po_product.product_number','po_product.product_total'
-                        ,'purchase.purchase_detail',DB::raw('CONCAT(users.first_name," ",users.last_name) AS fullname'))
+                        ,'purchase.customer_id','customer.customer_name','customer.customer_detail'
+                        ,DB::raw('CONCAT(users.first_name," ",users.last_name) AS fullname'))
                         ->where('users.user_id', $user_id)
                         ->where('purchase.purchase_id', $purchase_id)
                         ->get();
@@ -43,7 +45,9 @@ class PurchasedetailController extends Controller
             $purchases['purchase_date'] = $this->datethaishort($key->purchase_date);
             $purchases['purchase_user'] = $key->fullname;
             $purchases['purchase_reference'] = $key->purchase_reference;
-            $purchases['purchase_detail'] = $key->purchase_detail;
+            $purchases['customer_id'] = $key->customer_id;
+            $purchases['customer_name'] = $key->customer_name;
+            $purchases['customer_detail'] = $key->customer_detail;
             $purchases['product_id'] = $key->product_id;
             $purchases['product_code'] = $key->product_code;
             $purchases['product_name'] = $key->product_name;

@@ -32,9 +32,13 @@
                                         <div class="ul-purchase-detail-purchase-status mb-4 d-flex align-items-baseline">
                                             <h4 class="font-weight-400 text-primary mb-0 mr-2">สถานะ</h4>
                                             @if( $purchases['purchase_status_tranfer'] == 1)
+                                                <h5 class="font-weight-200 text-primary mb-0 mr-2">รอคำสั่งซื้อสินค้า</h5>
+                                            @elseif($purchases['purchase_status_tranfer'] == 2)
                                                 <h5 class="font-weight-200 text-primary mb-0 mr-2">สำเร็จ</h5>
+                                            @elseif($purchases['purchase_status_tranfer'] == 9)
+                                            <h5 class="font-weight-200 text-primary mb-0 mr-2">ยกเลิก</h5>
                                             @else
-                                            <h5 class="font-weight-200 text-primary mb-0 mr-2">รอโอนสินค้า</h5>
+                                            <h5 class="font-weight-200 text-primary mb-0 mr-2">รอดำเนินการ</h5>
                                             @endif
                                         </div>
                                     </div>
@@ -46,14 +50,18 @@
                                             <h5 class="font-weight-200 text-primary mb-0 mr-2">{{ $purchases['purchase_user'] }}</h5>
                                         </div>
                                         <div class="ul-purchase-detail-purchase-name mb-4 d-flex align-items-baseline">
-                                            <h4 class="font-weight-400 text-primary mb-0 mr-2">รายละเอียด</h4>
-                                            <h5 class="font-weight-200 text-primary mb-0 mr-2">{{ $purchases['purchase_detail'] }}</h5>
+                                            <h4 class="font-weight-400 text-primary mb-0 mr-2">ชื่อลูกค้า</h4>
+                                            <h5 class="font-weight-200 text-primary mb-0 mr-2">{{ $purchases['customer_name'] }}</h5>
+                                        </div>
+                                        <div class="ul-purchase-detail-purchase-name mb-4 d-flex align-items-baseline">
+                                            <h4 class="font-weight-400 text-primary mb-0 mr-2">รายละเอียดลูกค้า</h4>
+                                            <h5 class="font-weight-200 text-primary mb-0 mr-2">{{ $purchases['customer_detail'] }}</h5>
                                         </div>
                                         <div class="ul-purchase-detail-purchase-name mb-4 d-flex align-items-baseline">
                                             <h4 class="font-weight-400 text-primary mb-0 mr-2">สินค้าเข้าที่</h4>
                                             <h5 class="font-weight-200 text-primary mb-0 mr-2">{{ $purchases['stock_place_name'] }}</h5>
                                         </div>
-                                        @if( $purchases['purchase_status_tranfer'] != 1)
+                                        @if( $purchases['purchase_status_tranfer'] == 0)
                                             <div class="ul-product-detail__brand-name mb-4">
                                                 <div class="btn-group">
                                                     <button type="button" class="btn btn-brand dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">การจัดการ</button>

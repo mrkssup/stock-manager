@@ -137,7 +137,7 @@
       alert(msg);
     }
 </script>
-<script src="http://code.jquery.com/jquery-1.11.0.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.4.0/Chart.min.js"></script>
 <script>
     $(document).on("click", "#open-dialog", function (e) {
     e.preventDefault();

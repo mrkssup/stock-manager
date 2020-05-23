@@ -11,6 +11,7 @@ use App\Model\purchase;
 use App\Model\po_product;
 use App\Model\sell;
 use App\Model\so_product;
+use App\Model\customer;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Input;
 use Illuminate\Support\Facades\DB;
@@ -60,6 +61,14 @@ class AddsellController extends Controller
                             $products[$i]['product_file_server'] = '/assets/files/'.$user_id."/".$key->product_id.'/'.$key->product_file_server;
                             $i++;
                         }
+        $customer = array();$i=0;
+        $query_customer = customer::all();
+            foreach($query_customer as $key){
+                $customer[$i]['customer_id'] = $key->customer_id;
+                $customer[$i]['customer_name'] = $key->customer_name;
+                $customer[$i]['customer_detail'] = $key->customer_detail;
+                $i++;
+            }
         if($product_id!=null){
             $get_product = array();
             $query_get_products = products::join('users','users.user_id','=','products.user_id')
@@ -82,10 +91,12 @@ class AddsellController extends Controller
                 $get_product['stock_number'] = $key->stock_number;
                 $get_product['product_file_server'] = '/assets/files/'.$user_id."/".$key->product_id.'/'.$key->product_file_server;
             }
-            return view('sell._addsell')->with(['sell_code' => $sell_code,'today' =>$today, 'stocks' =>$stocks,'products' => $products,'get_product' => $get_product]);
+            return view('sell._addsell')->with(['sell_code' => $sell_code,'today' =>$today, 'stocks' =>$stocks
+            ,'products' => $products,'get_product' => $get_product, 'customer' => $customer]);
         }
 
-        return view('sell._addsell')->with(['sell_code' => $sell_code,'today' =>$today, 'stocks' =>$stocks,'products' => $products]);
+        return view('sell._addsell')->with(['sell_code' => $sell_code,'today' =>$today, 'stocks' =>$stocks
+        ,'products' => $products,'customers' => $customer]);
 
 
 
@@ -102,26 +113,42 @@ class AddsellController extends Controller
             if($request){
                 DB::beginTransaction();
                 try{
-                    $create_sell= sell::create([
-                        'user_id' => $user_id,
-                        'sell_code' => $request->sell_code,
-                        'sell_date' => $request->sell_date,
-                        'sell_reference' => $request->sell_reference,
-                        'sell_detail' => $request->sell_detail,
-                        'sell_total' => $request->product_total,
-                        'sell_stock' => $request->stock_place_id,
-                        'sell_status' => $request->sell_status
-                    ]);
+                    if($request->customer_id == null){
+                        $create_customer= customer::create([
+                            'customer_name' => $request->customer_name,
+                            'customer_detail' => $request->customer_detail,
+                        ]);
+                        $create_sell= sell::create([
+                            'user_id' => $user_id,
+                            'sell_code' => $request->sell_code,
+                            'sell_date' => $request->sell_date,
+                            'sell_reference' => $request->sell_reference,
+                            'customer_id' => $create_customer['customer_id'],
+                            'sell_total' => $request->product_total,
+                            'sell_stock' => $request->stock_place_id,
+                            'sell_status' => 0
+                        ]);
+                    }else{
+                        $create_sell= sell::create([
+                            'user_id' => $user_id,
+                            'sell_code' => $request->sell_code,
+                            'sell_date' => $request->sell_date,
+                            'sell_reference' => $request->sell_reference,
+                            'customer_id' => $request->customer_id,
+                            'sell_total' => $request->product_total,
+                            'sell_stock' => $request->stock_place_id,
+                            'sell_status' => 0
+                        ]);
+                    }
                     $create_so_product= so_product::create([
                         'sell_id' => $create_sell['sell_id'],
                         'product_id' => $request->product_id,
                         'product_number' => $request->product_number,
                         'product_total' => $request->product_total,
                     ]);
-                    if($request->sell_status == '1'){
-                        $product_id =null;
-                        $product_number =null;
-                        $query_so_product = so_product::select('so_product.product_id','so_product.product_number')
+                    $product_id =null;
+                    $product_number =null;
+                    $query_so_product = so_product::select('so_product.product_id','so_product.product_number')
                         ->where('so_product.sell_id',$create_sell['sell_id'])
                         ->get();
                         foreach($query_so_product as $key){
@@ -140,12 +167,9 @@ class AddsellController extends Controller
                             $product_stock = $key->stock_number;
                         }
                         $data_new = $product_stock-$product_number;
-                        $update_stock = stocks::where('product_id','=',$product_id)
-                        ->where('stock_place_id','=',$request->stock_place_id)
-                        ->update([
-                            'stock_number' => $data_new,
-                        ]);
-                    }
+                        if($data_new < 0){
+                            return redirect('/addsell')->with('alert' , "สินค้าคงเหลือในคลังไม่พอ" );
+                        }
                     DB::commit();
                     return redirect('/sells')->with('alert' , "เพิ่มข้อมูลสำเร็จ");
                 } catch (\Exception $e) {

@@ -86,8 +86,9 @@
                                                 <tr>
                                                     <th scope="col">#</th>
                                                     <th scope="col">ประเภท</th>
-                                                    <th scope="col">สถานะ</th>
                                                     <th scope="col">รายการเลขที่</th>
+                                                    <th scope="col">รหัสสินค้า</th>
+                                                    <th scope="col">สถานะ</th>
                                                     <th scope="col">จำนวน</th>
                                                     <th scope="col">จาก</th>
                                                     <th scope="col">ไป</th>
@@ -101,13 +102,17 @@
                                                         <td>{{ $card['order'] }}</td>
                                                         <td>{{ $card['type'] }}</td>
                                                         <td>{{ $card['code'] }}</td>
-                                                        @if( $card['status'] == '1' ){
+                                                        <td>{{ $card['product_code'] }}</td>
+                                                        @if($card['status'] == '1' )
+                                                            <td>รอคำสั่งซื้อ/ขาย</td>
+                                                        @elseif ($card['status'] == '2')
                                                             <td>สำเร็จ</td>
-                                                        }@elseif( $card['status'] == '0' ){
-                                                            <td>รอโอนสินค้า</td>
-                                                        }@else{
+                                                        @elseif ($card['status'] == '9')
+                                                            <td>ยกเลิก</td>
+                                                        @elseif ($card['status'] == '0')
+                                                            <td>กำลังดำเนินการ</td>
+                                                        @else
                                                            <td>{{ $card['status']}}</td>
-                                                        }
                                                         @endif
                                                         <td>{{ $card['number'] }}</td>
                                                         <td>{{ $card['stock_out'] }}</td>

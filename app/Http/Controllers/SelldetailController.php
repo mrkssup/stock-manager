@@ -11,6 +11,7 @@ use App\Model\purchase;
 use App\Model\po_product;
 use App\Model\sell;
 use App\Model\so_product;
+use App\Model\customer;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Input;
 use Illuminate\Support\Facades\DB;
@@ -31,11 +32,12 @@ class SelldetailController extends Controller
                         ->join('so_product','sell.sell_id','=','so_product.sell_id')
                         ->join('stock_places','sell.sell_stock','=','stock_places.stock_place_id')
                         ->join('products','so_product.product_id','=','products.product_id')
+                        ->join('customer','sell.customer_id','=','customer.customer_id')
                         ->select('sell.sell_id','sell.sell_code','sell.sell_date'
                         ,'products.product_code','products.product_id','sell.sell_stock','stock_places.stock_place_name'
                         ,'products.product_name','sell.sell_total','sell.sell_reference','sell.sell_status'
                         ,'so_product.product_number','so_product.product_total'
-                        ,'sell.sell_detail',DB::raw('CONCAT(users.first_name," ",users.last_name) AS fullname'))
+                        ,'sell.customer_id','customer.customer_name','customer.customer_detail',DB::raw('CONCAT(users.first_name," ",users.last_name) AS fullname'))
                         ->where('users.user_id', $user_id)
                         ->where('sell.sell_id', $sell_id)
                         ->get();
@@ -45,7 +47,9 @@ class SelldetailController extends Controller
             $sells['sell_date'] = $this->datethaishort($key->sell_date);
             $sells['sell_user'] = $key->fullname;
             $sells['sell_reference'] = $key->sell_reference;
-            $sells['sell_detail'] = $key->sell_detail;
+            $sells['customer_id'] = $key->customer_id;
+            $sells['customer_name'] = $key->customer_name;
+            $sells['customer_detail'] = $key->customer_detail;
             $sells['product_id'] = $key->product_id;
             $sells['product_code'] = $key->product_code;
             $sells['product_name'] = $key->product_name;

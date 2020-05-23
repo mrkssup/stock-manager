@@ -37,9 +37,16 @@
                                     </div>
                                 </div>
                                 <div class="form-group row">
-                                    <label for="inputsell_detail" class="col-sm-2 col-form-label">รายละเอียดคู่ค้า</label>
+                                    <label for="customer_name" class="col-sm-2 col-form-label"><a id ="select-customer" data-toggle="modal"  href="#selectcustomer"><i class="customer i-Cursor-Select"></i></a>ชื่อลูกค้า</label>
                                     <div class="col-sm-4">
-                                        <textarea class="form-control" rows = "5" cols = "50" name = "sell_detail"></textarea>
+                                        <input type="hidden"  name ="customer_id"  value=''  class="form-control" id="inputcustomer_id" >
+                                        <input type="text"  name ="customer_name" value='' class="form-control" id="inputcustomer_name" >
+                                    </div>
+                                </div>
+                                <div class="form-group row">
+                                    <label for="inputcustomer_detail" class="col-sm-2 col-form-label">รายละเอียดลูกค้า</label>
+                                    <div class="col-sm-4">
+                                        <textarea class="form-control" rows = "5" cols = "50" name = "customer_detail" id="inputcustomer_detail"></textarea>
                                     </div>
                                 </div>
                                 <div class="form-group row">
@@ -69,7 +76,7 @@
                                     </div>
                                 </div>
 
-                                <div class="form-group row">
+                                {{-- <div class="form-group row">
                                     <label for="input" class="col-sm-2 col-form-label">โอนสินค้าออก</label>
                                     <div class="col-sm-4">
                                         <label class="radio radio-primary">
@@ -83,7 +90,7 @@
                                             <span class="checkmark"></span>
                                         </label>
                                     </div>
-                                </div>
+                                </div> --}}
                                 <div class="form-group row">
                                     <label for="inputstock_place_id" class="col-sm-2 col-form-label">สินค้าออกที่</label>
                                         <div class="col-sm-4">
@@ -164,7 +171,8 @@
                                                 </div>
                                             </div>
                                         </div>
-                            </div>
+                                    </div>
+                                </div>
                             <div class="modal-footer">
                                 <button type="button" class="btn btn-secondary" data-dismiss="modal">ยกเลิก</button>
                             </div>
@@ -172,6 +180,65 @@
                     </div>
                 </div>
 
+
+
+            </div>
+
+            {{-------------------------------------------select-customer--------------------------------------------------------------}}
+             <div class="modal fade bd-modal-lg" id="selectcustomer" tabindex="-1" role="dialog" aria-labelledby="selectcustomerLabel" aria-hidden="true">
+                <div class="modal-dialog modal-lg" role="document">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title" id="deleteModalh5">เลือกสินค้า</h5>
+                            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                <span aria-hidden="true">&times;</span>
+                            </button>
+                        </div>
+                        <div class="modal-body">
+                            <div class="row">
+                                <div class="col-lg-12 col-md-12">
+                                    <div class="row">
+                                        <div class="col-md-12">
+                                            <div class="card o-hidden mb-4">
+                                                <div class="card-header d-flex align-items-center border-0">
+                                                    <h3 class="w-50 float-left card-title m-0">รายการสินค้า</h3>
+                                                </div>
+                                                <div class="">
+                                                    <div class="table-responsive">
+                                                        <table id="products_table" class="table  text-center">
+                                                            <thead>
+                                                                <tr>
+                                                                    <th scope="col">#</th>
+                                                                    <th scope="col">ชื่อลูกค้า</th>
+                                                                    <th scope="col">รายละเอียดลูกค้า</th>
+                                                                    <th scope="col">การจัดการ</th>
+                                                                </tr>
+                                                            </thead>
+                                                            <tbody>
+                                                                @foreach ($customers as $customer)
+                                                                <tr>
+                                                                <td><p id="data-product-id{{ $customer['customer_id'] }}">{{ $customer['customer_id'] }}</p></td>
+                                                                        <td><p id="data-customer-name{{ $customer['customer_id'] }}">{{ $customer['customer_name'] }}</p></td>
+                                                                        <td><p id ="data-customer-detail{{ $customer['customer_id'] }}">{{ $customer['customer_detail'] }}</p></td>
+                                                                        <td>
+                                                                            <button type="submit" id ="addcustomer" data-id={{ $customer['customer_id']}} class="add-customer btn btn-primary" data-dismiss="modal">เลือก</button>
+                                                                        </td>
+                                                                </tr>
+                                                                @endforeach
+                                                            </tbody>
+                                                        </table>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-dismiss="modal">ยกเลิก</button>
+                        </div>
+                    </div>
+                </div>
             </div>
 
 
@@ -183,7 +250,7 @@
       alert(msg);
     }
 </script>
-<script src="http://code.jquery.com/jquery-1.11.0.min.js"></script>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
 
 <script>
     $(document).ready(function(){
@@ -200,27 +267,43 @@
         e.preventDefault();
     });
 
+        $(document).on("click", "#addcustomer", function (e) {
+            e.preventDefault();
+            var _self = $(this);
+            var Id = _self.data('id');
+            var customer_id = Id;
+            var data_name ="#data-customer-name";
+            var data_str_name = data_name.concat(Id);
+            var data_detail ="#data-customer-detail";
+            var data_str_detail = data_detail.concat(Id);
+            $("#inputcustomer_id").val(customer_id);
+            var customer_name = $(data_str_name).text();
+            $("#inputcustomer_name").val(customer_name);
+            var customer_detail = $(data_str_detail).text();
+            $("#inputcustomer_detail").val(customer_detail);
+        });
+
 
         $(document).on("click", "#addproduct", function (e) {
-        e.preventDefault();
-        var _self = $(this);
-        var Id = _self.data('id');
-        var product_id = Id;
-        var data_code ="#data-product-code";
-        var data_str_code = data_code.concat(Id);
-        var data_name ="#data-product-name";
-        var data_str_name = data_name.concat(Id);
-        var data_sell ="#data-product-sell";
-        var data_str_sell = data_sell.concat(Id)
-        $("#inputproduct_id").val(product_id);
-        var product_code = $(data_str_code).text();
-        $("#inputproduct_code").val(product_code);
-        var product_name = $(data_str_name).text();
-        $("#inputproduct_name").val(product_name);
-        var product_sell = $(data_str_sell).text();
-        $("#inputproduct_sell").val(product_sell);
-
+            e.preventDefault();
+            var _self = $(this);
+            var Id = _self.data('id');
+            var product_id = Id;
+            var data_code ="#data-product-code";
+            var data_str_code = data_code.concat(Id);
+            var data_name ="#data-product-name";
+            var data_str_name = data_name.concat(Id);
+            var data_sell ="#data-product-sell";
+            var data_str_sell = data_sell.concat(Id)
+            $("#inputproduct_id").val(product_id);
+            var product_code = $(data_str_code).text();
+            $("#inputproduct_code").val(product_code);
+            var product_name = $(data_str_name).text();
+            $("#inputproduct_name").val(product_name);
+            var product_sell = $(data_str_sell).text();
+            $("#inputproduct_sell").val(product_sell);
         });
+
         $(document).ready(function(){
             $('input').keyup(function(){ // run anytime the value changes
                 var firstValue = document.getElementById("inputproduct_number").value

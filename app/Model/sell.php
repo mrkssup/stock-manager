@@ -14,7 +14,7 @@ class sell extends Model
             'sell_code',
             'sell_date',
             'sell_reference',
-            'sell_detail',
+            'customer_id',
             'sell_tax',
             'sell_total',
             'sell_stock',

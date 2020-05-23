@@ -9,12 +9,14 @@ use App\Model\stock_places;
 use App\Model\category;
 use App\Model\purchase;
 use App\Model\po_product;
+use App\Model\customer;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Input;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Arr;
 use Config;
 use Mail;
+use PDF;
 use Storage;
 use Validator;
 use PhpOffice\PhpSpreadsheet\IOFactory;
@@ -70,7 +72,8 @@ class PurchasesController extends Controller
         $query_purchases = $query_purchases->where(function($query) use ($search)
                         {
                             $query->where('purchase.purchase_code', 'LIKE' , '%'.$search.'%')
-                                  ->orWhere('products.product_code', 'LIKE' , '%'.$search.'%');
+                                  ->orWhere('products.product_code', 'LIKE' , '%'.$search.'%')
+                                  ->orWhere('products.product_name', 'LIKE' , '%'.$search.'%');
                         });
         $query_purchases = $query_purchases->get();
         foreach($query_purchases as $key){
@@ -101,6 +104,7 @@ class PurchasesController extends Controller
             return redirect('/');
         }else{
             if($request){
+                $purchases = array();
                 $query_check_purchase = purchase::where('purchase_id',$request->purchase_id)->get();
                 if(!is_null($query_check_purchase)){
                     DB::beginTransaction();
@@ -109,32 +113,74 @@ class PurchasesController extends Controller
                         ->update([
                             'purchase_status_tranfer' => '1',
                         ]);
-                    $product_id =null;
-                    $product_number =null;
-                    $query_po_product = po_product::select('po_product.product_id','po_product.product_number')
-                        ->where('po_product.purchase_id',$request->purchase_id)
-                        ->get();
-                    foreach($query_po_product as $key){
-                        $product_id = $key->product_id;
-                        $product_number = $key->product_number;
+                    DB::commit();
+                    $query_purchases = purchase::join('users','purchase.user_id','=','users.user_id')
+                    ->join('po_product','purchase.purchase_id','=','po_product.purchase_id')
+                    ->join('stock_places','purchase.purchase_stock','=','stock_places.stock_place_id')
+                    ->join('products','po_product.product_id','=','products.product_id')
+                    ->join('customer','purchase.customer_id','=','customer.customer_id')
+                    ->select('purchase.purchase_id','purchase.purchase_code','purchase.purchase_date'
+                    ,'products.product_code','products.product_id','purchase.purchase_stock','stock_places.stock_place_name'
+                    ,'products.product_name','purchase.purchase_total','purchase.purchase_reference','purchase.purchase_status_tranfer'
+                    ,'po_product.product_number','po_product.product_total','products.product_price_buy'
+                    ,'purchase.customer_id','customer.customer_name','customer.customer_detail'
+                    ,DB::raw('CONCAT(users.first_name," ",users.last_name) AS fullname'))
+                    ->where('users.user_id', $user_id)
+                    ->where('purchase.purchase_id', $request->purchase_id)
+                    ->get();
+                    foreach($query_purchases as $key){
+                        $purchases['purchase_id'] = $key->purchase_id;
+                        $purchases['purchase_code'] = $key->purchase_code;
+                        $purchases['purchase_date'] = $this->datethaishort($key->purchase_date);
+                        $purchases['purchase_user'] = $key->fullname;
+                        $purchases['purchase_reference'] = $key->purchase_reference;
+                        $purchases['customer_id'] = $key->customer_id;
+                        $purchases['customer_name'] = $key->customer_name;
+                        $purchases['customer_detail'] = $key->customer_detail;
+                        $purchases['product_id'] = $key->product_id;
+                        $purchases['product_code'] = $key->product_code;
+                        $purchases['product_name'] = $key->product_name;
+                        $purchases['product_number'] = $key->product_number;
+                        $purchases['product_total'] = $key->product_total;
+                        $purchases['product_price_buy'] = $key->product_price_buy;
+                        $purchases['purchase_total'] = $key->purchase_total;
+                        $purchases['full_name'] = $key->fullname;
+                        $purchases['stock_place_name'] = $key->stock_place_name;
+                        $purchases['purchase_status_tranfer'] = $key->purchase_status_tranfer;
                     }
-                    $product_stock = null;
-                    $query_product_stock = products::join('users','users.user_id','=','products.user_id')
-                        ->join('stocks','products.product_id','=','stocks.product_id')
-                        ->select('stocks.stock_number')
-                        ->where('products.product_id',$product_id)
-                        ->where('stocks.stock_place_id',$request->stock_place_id)
-                        ->where('users.user_id',$user_id)
-                        ->get();
-                    foreach($query_product_stock as $key){
-                        $product_stock = $key->stock_number;
+                        $pdf = PDF::loadView('pr',['purchases'=>$purchases]);
+                        //return $pdf->download('invoice.pdf');
+                        return  $pdf->stream('pr.pdf',array('Attachment'=>0));
+                    } catch (\Exception $e) {
+                        DB::rollback();
+                        //return $e;
+                        return redirect()->route('purchases')->with('alert' , "การแก้ไขข้อมูลผิดพลาด".$e );
                     }
-                    $data_new = $product_stock+$product_number;
-                    $update_stock = stocks::where('product_id','=',$product_id)
-                        ->where('stock_place_id','=',$request->stock_place_id)
+                }else{
+                    return view('others._notFound');
+                }
+            }else{
+                return redirect('/purchases')->with('alert' , "ชุดข้อมูลไม่ถูกต้อง" );
+            }
+        }
+    }
+
+    public function cancel_status(Request $request)
+    {
+        $user_id = session('uid');
+        //return $request->all();
+        if($user_id == ''){
+            return redirect('/');
+        }else{
+            if($request){
+                $query_check_purchase = purchase::where('purchase_id',$request->purchase_id)->get();
+                if(!is_null($query_check_purchase)){
+                    DB::beginTransaction();
+                try{
+                    $update_purchase = purchase::where('purchase_id','=',$request->purchase_id)
                         ->update([
-                            'stock_number' => $data_new,
-                    ]);
+                            'purchase_status_tranfer' => '9',
+                        ]);
                     DB::commit();
                     return redirect('/purchases');
                     } catch (\Exception $e) {
@@ -221,9 +267,13 @@ class PurchasesController extends Controller
             $worksheet->setCellValue(chr($col+6).($start2+$i),$key["product_number"]);
             $worksheet->setCellValue(chr($col+7).($start2+$i),$key["purchase_total"]);
             if($key["purchase_status_tranfer"] == '1'){
+                $worksheet->setCellValue(chr($col+8).($start2+$i),'รอดำเนินการ');
+            }elseif($key["purchase_status_tranfer"] == '2'){
                 $worksheet->setCellValue(chr($col+8).($start2+$i),'สำเร็จ');
+            }elseif($key["purchase_status_tranfer"] == '9'){
+                $worksheet->setCellValue(chr($col+8).($start2+$i),'ยกเลิก');
             }else{
-                $worksheet->setCellValue(chr($col+8).($start2+$i),'รอโอนสินค้า');
+                $worksheet->setCellValue(chr($col+8).($start2+$i),'รอคำสั่งซื้อ');
             }
             $worksheet->setCellValue(chr($col+9).($start2+$i),$this->datethaishort($key["purchase_date"]));
             $i++;

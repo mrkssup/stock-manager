@@ -13,7 +13,7 @@
                     <div class="md-form active-cyan">
                         <form method="POST" action="{{ url('searchpurchase') }}">
                         {{ csrf_field() }}
-                            <input class="form-control"  type="search"  name ="search" placeholder="ค้นหาหมวดหมู่" aria-label="ค้นหาหมวดหมู่">
+                            <input class="form-control"  type="search"  name ="search" placeholder="ค้นหาหมวดหมู่" aria-label="ค้นหารายการสั่งซื้อสินค้า">
                     </div>
                 </div>
                 <div class="col-lg-2 col-md-2">
@@ -66,11 +66,17 @@
                                                         <td>{{ $purchase['purchase_date'] }}</td>
                                                         <td><a href="/product/{{ $purchase['product_id'] }}">{{ $purchase['product_code'] }}</a></td>
                                                         <td>{{ $purchase['purchase_total'] }}</td>
-                                                        @if( $purchase['purchase_status_tranfer'] == 1)
+                                                        @if( $purchase['purchase_status_tranfer'] == '2')
                                                             <td>สำเร็จ</td>
                                                             <td>-</td>
+                                                        @elseif($purchase['purchase_status_tranfer'] == '1')
+                                                            <td>รอดำเนินการ</td>
+                                                            <td>-</td>
+                                                        @elseif($purchase['purchase_status_tranfer'] == '9')
+                                                            <td>ยกเลิก</td>
+                                                            <td>-</td>
                                                         @else
-                                                            <td>รอโอนสินค้า</td>
+                                                            <td>รอคำสั่งซื้อ</td>
                                                             <td>
                                                                 <div class="btn-group">
                                                                     <button type="button" class="btn bg-white _r_btn" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
@@ -79,7 +85,8 @@
                                                                         <span class="_dot _r_block-dot bg-success"></span>
                                                                     </button>
                                                                     <div class="dropdown-menu" x-placement="bottom-start">
-                                                                        <a class="dropdown-item" id ="edit-purchase" data-id={{ $purchase['purchase_id'] }} data-name={{ $purchase['purchase_code'] }} data-stock={{ $purchase['purchase_stock'] }}  data-toggle="modal"  href="#editpurchase">เปลี่ยนสถานะ</a></i>
+                                                                        <a class="dropdown-item" id ="edit-purchase" data-id={{ $purchase['purchase_id'] }} data-name={{ $purchase['purchase_code'] }} data-stock={{ $purchase['purchase_stock'] }}  data-toggle="modal"  href="#editpurchase">สร้างคำสั่งซื้อ</a></i>
+                                                                        <a class="dropdown-item" id ="cancel-purchase" data-id={{ $purchase['purchase_id'] }} data-name={{ $purchase['purchase_code'] }} data-stock={{ $purchase['purchase_stock'] }}  data-toggle="modal"  href="#cancelpurchase">ยกเลิก</a></i>
                                                                         <a class="dropdown-item" href="/editpurchase/{{ $purchase['purchase_id'] }}">แก้ไข</a>
                                                                     </div>
                                                                 </div>
@@ -117,7 +124,41 @@
                                         </div>
                                     </div>
                                     <div class="form-group row">
-                                        <label for="inputcategory_name" class="col-sm-8 col-form-label"> ท่านต้องการโอนสินค้าเข้าคลังที่เลือกไว้ใช่หรือไม่</label>
+                                        <label for="inputcategory_name" class="col-sm-8 col-form-label"> ท่านต้องสร้างรายการคำสั่งซื้อใช่หรือใหม่</label>
+                                    </div>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-dismiss="modal">ยกเลิก</button>
+                                <button type="submit" class="btn btn-primary">ยืนยัน</button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {{---------------------------------------------cancelpurchase----------------------------------------------------------------}}
+                <div class="modal fade" id="cancelpurchase" tabindex="-1" role="dialog" aria-labelledby="cancelpurchaseLabel" aria-hidden="true">
+                    <div class="modal-dialog" role="document">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title" id="deleteModalh5">ยกเลิกรายการซื้อสินค้า</h5>
+                                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                    <span aria-hidden="true">&times;</span>
+                                </button>
+                            </div>
+                            <div class="modal-body">
+                                <form method="POST" action="{{ url('cancelpurchase') }}">
+                                    {{ csrf_field() }}
+                                    <div class="form-group row">
+                                        <label for="inputcategory_name" class="col-sm-4 col-form-label">รายการเลขที่</label>
+                                        <div class="col-sm-8">
+                                            <input type="hidden" id="put" name="_method" value="PUT" />
+                                            <input type="hidden" id="cancel_purchase_stock"  name="stock_place_id"  class="form-control" value="">
+                                            <input type="hidden" id="cancel_purchase_id"  name="purchase_id"  class="form-control" value="">
+                                            <input type="text" id="cancel_purchase_code"  name="purchase_code"  class="form-control" value="">
+                                        </div>
+                                    </div>
+                                    <div class="form-group row">
+                                        <label for="inputcategory_name" class="col-sm-8 col-form-label"> ท่านต้องการยกเลิกรายการซื้อสินค้าที่เลือกใช่หรือไม่</label>
                                     </div>
                             </div>
                             <div class="modal-footer">
@@ -139,7 +180,7 @@
       alert(msg);
     }
 </script>
-<script src="http://code.jquery.com/jquery-1.11.0.min.js"></script>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
 <script>
     $(document).on("click", "#edit-purchase", function (e) {
     e.preventDefault();
@@ -150,6 +191,18 @@
     $("#purchase_id").val(Id);
     $("#purchase_code").val(Code);
     $("#purchase_stock").val(Stock);
+    });
+</script>
+<script>
+    $(document).on("click", "#cancel-purchase", function (e) {
+    e.preventDefault();
+    var _self = $(this);
+    var Id = _self.data('id');
+    var Code = _self.data('name');
+    var Stock = _self.data('stock');
+    $("#cancel_purchase_id").val(Id);
+    $("#cancel_purchase_code").val(Code);
+    $("#cancel_purchase_stock").val(Stock);
     });
 </script>
 

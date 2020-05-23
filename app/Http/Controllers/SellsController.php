@@ -11,6 +11,7 @@ use App\Model\purchase;
 use App\Model\po_product;
 use App\Model\sell;
 use App\Model\so_product;
+use App\Model\shipment;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Input;
 use Illuminate\Support\Facades\DB;
@@ -32,10 +33,11 @@ class SellsController extends Controller
         $query_sells = sell::join('users','sell.user_id','=','users.user_id')
                         ->join('so_product','sell.sell_id','=','so_product.sell_id')
                         ->join('products','so_product.product_id','=','products.product_id')
+                        ->leftjoin('shipment','sell.sell_id','=','shipment.sell_id')
                         ->select('sell.sell_id','sell.sell_code','sell.sell_date'
                         ,'products.product_code','products.product_id','sell.sell_stock'
                         ,'products.product_name','sell.sell_total','sell.sell_status'
-                        ,'so_product.product_number','so_product.product_total')
+                        ,'so_product.product_number','so_product.product_total','shipment.tracking_number')
                         ->where('users.user_id', $user_id)
                         ->get();
         foreach($query_sells as $key){
@@ -51,6 +53,7 @@ class SellsController extends Controller
             $sells[$i]['sell_total'] = $key->sell_total;
             $sells[$i]['sell_stock'] = $key->sell_stock;
             $sells[$i]['sell_status'] = $key->sell_status;
+            $sells[$i]['tracking_number'] = $key->tracking_number;
             $i++;
         }
         return view('sell._sells')->with(['sells' => $sells]);
@@ -73,7 +76,8 @@ class SellsController extends Controller
         $query_sells = $query_sells->where(function($query) use ($search)
                         {
                             $query->where('sell.sell_code', 'LIKE' , '%'.$search.'%')
-                                  ->orWhere('products.product_code', 'LIKE' , '%'.$search.'%');
+                                  ->orWhere('products.product_code', 'LIKE' , '%'.$search.'%')
+                                  ->orWhere('products.product_name', 'LIKE' , '%'.$search.'%');
                         });
         $query_sells = $query_sells->get();
         foreach($query_sells as $key){
@@ -114,35 +118,37 @@ class SellsController extends Controller
                         ->update([
                             'sell_status' => '1',
                         ]);
-                    $product_id =null;
-                    $product_number =null;
-                    $query_so_product = so_product::select('so_product.product_id','so_product.product_number')
-                        ->where('so_product.sell_id',$request->sell_id)
-                        ->get();
-                    foreach($query_so_product as $key){
-                        $product_id = $key->product_id;
-                        $product_number = $key->product_number;
+                    DB::commit();
+                    return redirect('/sells');
+                    } catch (\Exception $e) {
+                        DB::rollback();
+                        return redirect()->route('sells')->with('alert' , "การแก้ไขข้อมูลผิดพลาด".$e );
                     }
-                    $product_stock = null;
-                    $query_product_stock = products::join('users','users.user_id','=','products.user_id')
-                        ->join('stocks','products.product_id','=','stocks.product_id')
-                        ->select('stocks.stock_number')
-                        ->where('products.product_id',$product_id)
-                        ->where('stocks.stock_place_id',$request->stock_place_id)
-                        ->where('users.user_id',$user_id)
-                        ->get();
-                    foreach($query_product_stock as $key){
-                        $product_stock = $key->stock_number;
-                    }
-                    $data_new = $product_stock-$product_number;
-                    if($data_new < 0){
-                        return redirect('/sells')->with('alert' , "สินค้าไม่พอ" );
-                    }
-                    $update_stock = stocks::where('product_id','=',$product_id)
-                        ->where('stock_place_id','=',$request->stock_place_id)
+                }else{
+                    return view('others._notFound');
+                }
+            }else{
+                return redirect('/sells')->with('alert' , "ชุดข้อมูลไม่ถูกต้อง" );
+            }
+        }
+    }
+
+    public function cancel_status(Request $request)
+    {
+        $user_id = session('uid');
+        // return $request->all();
+        if($user_id == ''){
+            return redirect('/');
+        }else{
+            if($request){
+                $query_check_sell = sell::where('sell_id',$request->sell_id)->get();
+                if(!is_null($query_check_sell)){
+                    DB::beginTransaction();
+                try{
+                    $update_sell = sell::where('sell_id','=',$request->sell_id)
                         ->update([
-                            'stock_number' => $data_new,
-                    ]);
+                            'sell_status' => '9',
+                        ]);
                     DB::commit();
                     return redirect('/sells');
                     } catch (\Exception $e) {
@@ -228,8 +234,12 @@ class SellsController extends Controller
             $worksheet->setCellValue(chr($col+5).($start2+$i),$key["product_name"]);
             $worksheet->setCellValue(chr($col+6).($start2+$i),$key["product_number"]);
             $worksheet->setCellValue(chr($col+7).($start2+$i),$key["sell_total"]);
-            if($key["purchase_status_tranfer"] == '1'){
+            if($key["sell_status"] == '1'){
+                $worksheet->setCellValue(chr($col+8).($start2+$i),'รอโอนสินค้า');
+            }elseif($key["sell_status"] == '2'){
                 $worksheet->setCellValue(chr($col+8).($start2+$i),'สำเร็จ');
+            }elseif($key["sell_status"] == '9'){
+                $worksheet->setCellValue(chr($col+8).($start2+$i),'ยกเลิก');
             }else{
                 $worksheet->setCellValue(chr($col+8).($start2+$i),'รอโอนสินค้า');
             }

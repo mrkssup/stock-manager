@@ -21,7 +21,7 @@ class EditproductController extends Controller
 {
     public function index(Request $request,$product_id)
     {
-        $user_id = '12';
+        $user_id = session('uid');
         $products = array();$i=0;
         $query_products = products::join('users','users.user_id','=','products.user_id')
                         ->join('stocks','products.product_id','=','stocks.product_id')
@@ -80,7 +80,7 @@ class EditproductController extends Controller
 
     public function edit(Request $request)
     {
-        $user_id = '12';
+        $user_id = session('uid');
         if($user_id == ''){
             return redirect('/');
         }else{
@@ -135,7 +135,7 @@ class EditproductController extends Controller
 
     public function deleteimage(Request $request,$product_file_id)
     {
-        $user_id = '12';
+        $user_id = session('uid');
         if($user_id == ''){
             return redirect('/');
         }else{

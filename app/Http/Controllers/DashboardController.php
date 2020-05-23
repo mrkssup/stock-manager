@@ -35,12 +35,14 @@ class DashboardController extends Controller
         $user_id = session('uid');
         $sum_all = array();
         $query_sum_purchase = purchase::select(DB::raw('sum(purchase.purchase_total) as sum_purchase'))
+                            ->where('purchase.purchase_status_tranfer', '2')
                             ->where('purchase.user_id', $user_id)
                             ->get();
         foreach($query_sum_purchase as $key){
             $sum_all['sum_purchase'] = $key->sum_purchase;
         }
         $query_sum_sell = sell::select(DB::raw('sum(sell.sell_total) as sum_sell'))
+                            ->where('sell.sell_status', '2')
                             ->where('sell.user_id', $user_id)
                             ->get();
         foreach($query_sum_sell as $key){
@@ -58,24 +60,32 @@ class DashboardController extends Controller
         $purchase = array();
         $query_purchase_6_month   = purchase::select(DB::raw('MONTH(purchase_date) AS month'),DB::raw('sum(purchase.purchase_total) as total'))
                                             ->where('purchase_date','>=',Carbon::now()->subMonths(6)->format('m'))
+                                            ->where('purchase.purchase_status_tranfer', '2')
                                             ->groupBy(DB::raw('YEAR(purchase_date) DESC, MONTH(purchase_date) ASC'))->get();
+
         foreach($query_purchase_6_month as $key){
             $purchase_6_month[$i]['month'] = $key->month;
-            array_push($purchase_month, $this->monththaishort($purchase_6_month[$i]['month']));
+            //array_push($purchase_month, $this->monththaishort($purchase_6_month[$i]['month']));
+            array_push($purchase_month, $key->month);
             $purchase_6_month[$i]['total'] = $key->total;
             array_push($purchase, $purchase_6_month[$i]['total']);
             $i++;
         }
+
+
         $sell_6_month = array();$i=0;
         $sell_month = array();
         $sell = array();
         $query_sell_6_month   = sell::select(DB::raw('MONTH(sell_date) AS month'),DB::raw('sum(sell.sell_total) as total'))
                                             ->where('sell_date','>=',Carbon::now()->subMonths(6)->format('m'))
+                                            ->where('sell.sell_status', '2')
                                             ->groupBy(DB::raw('YEAR(sell_date) DESC, MONTH(sell_date) ASC'))->get();
+
 
         foreach($query_sell_6_month as $key){
             $sell_6_month[$i]['month'] = $key->month;
-            array_push($sell_month, $this->datethaishort($sell_6_month[$i]['month']));
+            //array_push($sell_month, $this->monththaishort($sell_6_month[$i]['month']));
+            array_push($sell_month, $key->month);
             $sell_6_month[$i]['total'] = $key->total;
             array_push($sell, $sell_6_month[$i]['total']);
             $i++;
@@ -86,6 +96,12 @@ class DashboardController extends Controller
         foreach($get_month as $value){
             array_push($month, $value);
         }
+        sort($month);
+        $str_month =array();
+        for($i=0;$i<count($month);$i++){
+            array_push($str_month,$this->monththaishort($month[$i]));
+        }
+
 
         $stocks = array();$i=0;
         $stocks_name = array();
@@ -113,9 +129,9 @@ class DashboardController extends Controller
                         ->join('products','po_product.product_id','=','products.product_id')
                         ->select(DB::raw("'ซื้อ' as type"),'purchase.purchase_status_tranfer as status','purchase.purchase_code as code'
                         ,'po_product.product_number as number','stock_places.stock_place_name as stock_in',DB::raw("'-' as stock_out")
-                        ,DB::raw('sum(stocks.stock_number) as stock_number'),'purchase.purchase_date as date')
+                        ,DB::raw('sum(stocks.stock_number) as stock_number'),'purchase.purchase_date as date','products.product_code')
                         ->where('users.user_id', $user_id)
-                        ->groupBy('products.product_id');
+                        ->groupBy('purchase.purchase_id');
         $query_sells = sell::join('users','sell.user_id','=','users.user_id')
                         ->join('so_product','sell.sell_id','=','so_product.sell_id')
                         ->join('stocks','so_product.product_id','=','stocks.product_id')
@@ -123,9 +139,9 @@ class DashboardController extends Controller
                         ->join('products','so_product.product_id','=','products.product_id')
                         ->select(DB::raw("'ขาย' as type"),'sell.sell_status as status','sell.sell_code as code'
                         ,'so_product.product_number as number',DB::raw("'-' as stock_in"),'stock_places.stock_place_name as stock_out'
-                        ,DB::raw('sum(stocks.stock_number) as stock_number'),'sell.sell_date as date')
+                        ,DB::raw('sum(stocks.stock_number) as stock_number'),'sell.sell_date as date','products.product_code')
                         ->where('users.user_id', $user_id)
-                        ->groupBy('products.product_id');
+                        ->groupBy('sell.sell_id');
         $query_adjusts = adjust::join('users','adjust.user_id','=','users.user_id')
                         ->join('adjust_stock','adjust.adjust_id','=','adjust_stock.adjust_id')
                         ->join('products','adjust.product_id','=','products.product_id')
@@ -133,9 +149,9 @@ class DashboardController extends Controller
                         ->join('stock_places','stocks.stock_place_id','=','stock_places.stock_place_id')
                         ->select(DB::raw("'ปรับ' as type"),DB::raw("'สำเร็จ' as status"),'adjust.adjust_code as code'
                         ,'adjust_stock.adjust_stock_new as number',DB::raw("'-' as stock_in"),'stock_places.stock_place_name as stock_out'
-                        ,DB::raw('sum(stocks.stock_number) as stock_number'),'adjust.adjust_date as date')
+                        ,DB::raw('sum(stocks.stock_number) as stock_number'),'adjust.adjust_date as date','products.product_code')
                         ->where('users.user_id', $user_id)
-                        ->groupBy('stocks.stock_id');
+                        ->groupBy('adjust.adjust_id');
         $query_tranfers = tranfer::join('users','tranfer.user_id','=','users.user_id')
                         ->join('products','tranfer.product_id','=','products.product_id')
                         ->join('stocks','products.product_id','=','stocks.product_id')
@@ -143,7 +159,7 @@ class DashboardController extends Controller
                         ->join('stock_places as sout', 'sout.stock_place_id', '=', 'tranfer.tranfer_stock_new')
                         ->select(DB::raw("'โอน' as type"),DB::raw("'สำเร็จ' as status"),'tranfer.tranfer_code as code'
                         ,'tranfer.tranfer_stock_number as number','sin.stock_place_name as stock_in','sout.stock_place_name as stock_out'
-                        ,DB::raw('sum(stocks.stock_number) as stock_number'),'tranfer.tranfer_date as date')
+                        ,DB::raw('sum(stocks.stock_number) as stock_number'),'tranfer.tranfer_date as date','products.product_code')
                         ->where('users.user_id', $user_id)
                         ->groupBy('tranfer.tranfer_id');
         $result_query = $query_tranfers
@@ -157,6 +173,7 @@ class DashboardController extends Controller
             $stock_cards[$i]['type'] = $key->type;
             $stock_cards[$i]['status'] = $key->status;
             $stock_cards[$i]['code'] = $key->code;
+            $stock_cards[$i]['product_code'] = $key->product_code;
             $stock_cards[$i]['number'] = $key->number;
             $stock_cards[$i]['stock_in'] = $key->stock_in;
             $stock_cards[$i]['stock_out'] = $key->stock_out;
@@ -164,77 +181,15 @@ class DashboardController extends Controller
             $stock_cards[$i]['date'] = $this->datethaishort($key->date);
             $i++;
         }
-        return view('dashboard._dashboard')->with(['sum_all'=> $sum_all,'month' => $month
+        return view('dashboard._dashboard')->with(['sum_all'=> $sum_all,'month' => $str_month
         ,'purchase' => $purchase,'sell'=> $sell,'stocks_name'=> $stocks_name ,
         'stocks_number'=> $stocks_number,'stock_cards'=>$stock_cards]);
 
     }
 
 
-    public function search(Request $request)
-    {
-        $user_id = session('uid');
-        $search = $request->search;
-        $products = array();$i=0;
-        $query_products = products::join('users','users.user_id','=','products.user_id')
-                        ->join('stocks','products.product_id','=','stocks.product_id')
-                        ->join('product_file','products.product_id','=','product_file.product_id')
-                        ->select('products.product_id','products.product_code','products.product_name',
-                        'products.product_price_buy','products.product_price_sell','stocks.stock_id'
-                        ,'stocks.stock_number','product_file.product_file_server')
-                        ->where('users.user_id', $user_id);
-        $query_products = $query_products->where(function($query) use ($search)
-                        {
-                            $query->where('products.product_code', 'LIKE' , '%'.$search.'%')
-                                  ->orWhere('products.product_name', 'LIKE' , '%'.$search.'%');
-                        });
-        $query_products = $query_products->get();
-        foreach($query_products as $key){
-            $products[$i]['order'] = $i+1;
-            $products[$i]['product_id'] = $key->product_id;
-            $products[$i]['product_code'] = $key->product_code;
-            $products[$i]['product_name'] = $key->product_name;
-            $products[$i]['product_price_buy'] = $key->product_price_buy;
-            $products[$i]['product_price_sell'] = $key->product_price_sell;
-            $products[$i]['stock_id'] = $key->stock_id;
-            $products[$i]['stock_number'] = $key->stock_number;
-            $products[$i]['product_file_server'] = '/assets/files/'.$user_id."/".$key->product_id.'/'.$key->product_file_server;
-            $i++;
-        }
-        return view('products._products')->with(['products' => $products]);
-    }
 
 
-    public function delete(Request $request)
-    {
-        $user_id = session('uid');
-        if($user_id == ''){
-            return redirect('/');
-        }else{
-            if($request){
-                $query_check_product = products::where('product_id',$request->product_id)->get();
-                if(!is_null($query_check_product)){
-                    DB::beginTransaction();
-                try{
-                    $delete_product = products::where('product_id','=',$request->product_id)
-                        ->update([
-                        'product_status' => '99',
-                        ]);
-                    DB::commit();
-                    return redirect('/products');
-                    } catch (\Exception $e) {
-                        DB::rollback();
-                        return $e;
-                        return view('products._products')->with('alert' , "การเพิ่มข้อมูลผิดพลาด".$e );
-                    }
-                }else{
-                    return view('others._notFound');
-                }
-            }else{
-                return view('products._editproduct')->with('alert' , "ชุดข้อมูลไม่ถูกต้อง" );
-            }
-        }
-    }
 
 
     public function export(Request $request)
@@ -251,51 +206,51 @@ class DashboardController extends Controller
                         ->join('products','po_product.product_id','=','products.product_id')
                         ->select(DB::raw("'ซื้อ' as type"),'purchase.purchase_status_tranfer as status','purchase.purchase_code as code'
                         ,'po_product.product_number as number','stock_places.stock_place_name as stock_in',DB::raw("'-' as stock_out")
-                        ,DB::raw('sum(stocks.stock_number) as stock_number'),'purchase.purchase_date as date')
+                        ,DB::raw('sum(stocks.stock_number) as stock_number'),'purchase.purchase_date as date','products.product_code')
                         ->where('users.user_id', $user_id)
-                        ->groupBy('products.product_id');
-            $query_sells = sell::join('users','sell.user_id','=','users.user_id')
+                        ->groupBy('purchase.purchase_id');
+        $query_sells = sell::join('users','sell.user_id','=','users.user_id')
                         ->join('so_product','sell.sell_id','=','so_product.sell_id')
                         ->join('stocks','so_product.product_id','=','stocks.product_id')
                         ->join('stock_places','sell.sell_stock','=','stock_places.stock_place_id')
                         ->join('products','so_product.product_id','=','products.product_id')
                         ->select(DB::raw("'ขาย' as type"),'sell.sell_status as status','sell.sell_code as code'
                         ,'so_product.product_number as number',DB::raw("'-' as stock_in"),'stock_places.stock_place_name as stock_out'
-                        ,DB::raw('sum(stocks.stock_number) as stock_number'),'sell.sell_date as date')
+                        ,DB::raw('sum(stocks.stock_number) as stock_number'),'sell.sell_date as date','products.product_code')
                         ->where('users.user_id', $user_id)
-                        ->groupBy('products.product_id');
-            $query_adjusts = adjust::join('users','adjust.user_id','=','users.user_id')
+                        ->groupBy('sell.sell_id');
+        $query_adjusts = adjust::join('users','adjust.user_id','=','users.user_id')
                         ->join('adjust_stock','adjust.adjust_id','=','adjust_stock.adjust_id')
                         ->join('products','adjust.product_id','=','products.product_id')
                         ->join('stocks','products.product_id','=','stocks.product_id')
                         ->join('stock_places','stocks.stock_place_id','=','stock_places.stock_place_id')
                         ->select(DB::raw("'ปรับ' as type"),DB::raw("'สำเร็จ' as status"),'adjust.adjust_code as code'
                         ,'adjust_stock.adjust_stock_new as number',DB::raw("'-' as stock_in"),'stock_places.stock_place_name as stock_out'
-                        ,DB::raw('sum(stocks.stock_number) as stock_number'),'adjust.adjust_date as date')
+                        ,DB::raw('sum(stocks.stock_number) as stock_number'),'adjust.adjust_date as date','products.product_code')
                         ->where('users.user_id', $user_id)
-                        ->groupBy('stocks.stock_id');
-            $query_tranfers = tranfer::join('users','tranfer.user_id','=','users.user_id')
+                        ->groupBy('adjust.adjust_id');
+        $query_tranfers = tranfer::join('users','tranfer.user_id','=','users.user_id')
                         ->join('products','tranfer.product_id','=','products.product_id')
                         ->join('stocks','products.product_id','=','stocks.product_id')
                         ->join('stock_places as sin', 'sin.stock_place_id', '=', 'tranfer.tranfer_stock_old')
                         ->join('stock_places as sout', 'sout.stock_place_id', '=', 'tranfer.tranfer_stock_new')
                         ->select(DB::raw("'โอน' as type"),DB::raw("'สำเร็จ' as status"),'tranfer.tranfer_code as code'
                         ,'tranfer.tranfer_stock_number as number','sin.stock_place_name as stock_in','sout.stock_place_name as stock_out'
-                        ,DB::raw('sum(stocks.stock_number) as stock_number'),'tranfer.tranfer_date as date')
+                        ,DB::raw('sum(stocks.stock_number) as stock_number'),'tranfer.tranfer_date as date','products.product_code')
                         ->where('users.user_id', $user_id)
                         ->groupBy('tranfer.tranfer_id');
-
-            $result_query = $query_tranfers
-                            ->union($query_purchases)
-                            ->union($query_sells)
-                            ->union($query_adjusts)
-                            ->orderBy('date','DESC')
-                            ->get();
+        $result_query = $query_tranfers
+                        ->union($query_purchases)
+                        ->union($query_sells)
+                        ->union($query_adjusts)
+                        ->orderBy('date','DESC')
+                        ->get();
             foreach($result_query as $key){
                 $stock_cards[$i]['order'] = $i+1;
                 $stock_cards[$i]['type'] = $key->type;
                 $stock_cards[$i]['status'] = $key->status;
                 $stock_cards[$i]['code'] = $key->code;
+                $stock_cards[$i]['product_code'] = $key->product_code;
                 $stock_cards[$i]['number'] = $key->number;
                 $stock_cards[$i]['stock_in'] = $key->stock_in;
                 $stock_cards[$i]['stock_out'] = $key->stock_out;
@@ -321,7 +276,7 @@ class DashboardController extends Controller
             // $worksheet->setCellValue('A'.($start+1),  "รายการข้อมูล");
             // // Header starts ///
             //$header2 = array('ลำดับ', 'ประเภทการประชุม', 'ชื่อการประชุม', 'ครั้งที่ประชุม', 'วันที่ประชุม','จำนวนองค์ประชุม', 'จำนวนผู้เข้าร่วม' , 'จำนวนเอกสาร (แผ่น)','จำนวนกระดาษที่ลดได้ (แผ่น)');
-            $header2 = array('ลำดับ', 'ประเภท', 'สภานะ', 'รายการเลขที่','จำนวน', 'จาก' , 'ไป','คงเหลือ','วันที่ทำรายการ');
+            $header2 = array('ลำดับ', 'ประเภท', 'สภานะ', 'รายการเลขที่','รหัสสินค้า','จำนวน', 'จาก' , 'ไป','คงเหลือ','วันที่ทำรายการ');
 
             $start2 = +$start;
             for ($i = 0; $i < count($header2); $i++) {
@@ -338,22 +293,27 @@ class DashboardController extends Controller
             $worksheet->setCellValue(chr($col+1).($start2+$i), $i);
             $worksheet->setCellValue(chr($col+2).($start2+$i),$key["type"]);
             if($key["status"] == '1'){
+                $worksheet->setCellValue(chr($col+3).($start2+$i),'รอคำสั่งซื้อ/ขาย');
+            }elseif($key["status"] == '2'){
                 $worksheet->setCellValue(chr($col+3).($start2+$i),'สำเร็จ');
+            }elseif($key["status"] == '9'){
+                $worksheet->setCellValue(chr($col+3).($start2+$i),'ยกเลิก');
             }elseif($key["status"] == '0'){
-                $worksheet->setCellValue(chr($col+3).($start2+$i),'รอโอนสินค้า');
+                $worksheet->setCellValue(chr($col+3).($start2+$i),'กำลังดำเนินการ');
             }else{
                 $worksheet->setCellValue(chr($col+3).($start2+$i),'สำเร็จ');
             }
             $worksheet->setCellValue(chr($col+4).($start2+$i),$key["code"]);
-            $worksheet->setCellValue(chr($col+5).($start2+$i),$key["number"]);
-            $worksheet->setCellValue(chr($col+6).($start2+$i),$key["stock_out"]);
-            $worksheet->setCellValue(chr($col+7).($start2+$i),$key["stock_in"]);
-            $worksheet->setCellValue(chr($col+8).($start2+$i),$key["stock_number"]);
-            $worksheet->setCellValue(chr($col+9).($start2+$i),$key["date"]);
+            $worksheet->setCellValue(chr($col+5).($start2+$i),$key["product_code"]);
+            $worksheet->setCellValue(chr($col+6).($start2+$i),$key["number"]);
+            $worksheet->setCellValue(chr($col+7).($start2+$i),$key["stock_out"]);
+            $worksheet->setCellValue(chr($col+8).($start2+$i),$key["stock_in"]);
+            $worksheet->setCellValue(chr($col+9).($start2+$i),$key["stock_number"]);
+            $worksheet->setCellValue(chr($col+10).($start2+$i),$key["date"]);
             $i++;
              }
 
-             $worksheet->getStyle(chr($col+1).($start2).':'.chr($col+8).($start2+$i-1))
+             $worksheet->getStyle(chr($col+1).($start2).':'.chr($col+10).($start2+$i-1))
                 ->getBorders()
                 ->getAllBorders()
                 ->setBorderStyle(\PhpOffice\PhpSpreadsheet\Style\Border::BORDER_THIN)

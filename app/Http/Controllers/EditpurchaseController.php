@@ -9,6 +9,7 @@ use App\Model\stock_places;
 use App\Model\category;
 use App\Model\purchase;
 use App\Model\po_product;
+use App\Model\customer;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Input;
 use Illuminate\Support\Facades\DB;
@@ -29,11 +30,13 @@ class EditpurchaseController extends Controller
                         ->join('po_product','purchase.purchase_id','=','po_product.purchase_id')
                         ->join('stock_places','purchase.purchase_stock','=','stock_places.stock_place_id')
                         ->join('products','po_product.product_id','=','products.product_id')
+                        ->join('customer','purchase.customer_id','=','customer.customer_id')
                         ->select('purchase.purchase_id','purchase.purchase_code','purchase.purchase_date'
                         ,'products.product_code','products.product_id','purchase.purchase_stock','stock_places.stock_place_name'
                         ,'products.product_name','products.product_price_buy','purchase.purchase_total','purchase.purchase_status_tranfer'
                         ,'purchase_reference','po_product.po_product_id','po_product.product_number','po_product.product_total'
-                        ,'purchase.purchase_detail',DB::raw('CONCAT(users.first_name," ",users.last_name) AS fullname'))
+                        ,'purchase.customer_id','customer.customer_name','customer.customer_detail'
+                        ,DB::raw('CONCAT(users.first_name," ",users.last_name) AS fullname'))
                         ->where('users.user_id', $user_id)
                         ->where('purchase.purchase_id', $purchase_id)
                         ->get();
@@ -44,7 +47,9 @@ class EditpurchaseController extends Controller
                 $purchases['purchase_date'] = $key->purchase_date;
                 $purchases['purchase_user'] = $key->fullname;
                 $purchases['purchase_reference'] = $key->purchase_reference;
-                $purchases['purchase_detail'] = $key->purchase_detail;
+                $purchases['customer_id'] = $key->customer_id;
+                $purchases['customer_name'] = $key->customer_name;
+                $purchases['customer_detail'] = $key->customer_detail;
                 $purchases['purchase_stock'] = $key->purchase_stock;
                 $purchases['product_id'] = $key->product_id;
                 $purchases['po_product_id'] = $key->po_product_id;
@@ -85,7 +90,16 @@ class EditpurchaseController extends Controller
                             $products[$i]['product_file_server'] = '/assets/files/'.$user_id."/".$key->product_id.'/'.$key->product_file_server;
                             $i++;
                         }
-            return view('purchases._editpurchase')->with(['purchases' => $purchases,'stock_places' => $stock_places,'products' => $products]);
+            $customer = array();$i=0;
+            $query_customer = customer::all();
+                foreach($query_customer as $key){
+                    $customer[$i]['customer_id'] = $key->customer_id;
+                    $customer[$i]['customer_name'] = $key->customer_name;
+                    $customer[$i]['customer_detail'] = $key->customer_detail;
+                    $i++;
+                }
+            return view('purchases._editpurchase')->with(['purchases' => $purchases
+            ,'stock_places' => $stock_places,'products' => $products ,'customers' => $customer]);
         }else{
             return view('others._notFound');
         }
@@ -106,14 +120,15 @@ class EditpurchaseController extends Controller
                 if(!is_null($query_check_purchase)){
                     DB::beginTransaction();
                 try{
+
                     $update_purchase = purchase::where('purchase_id','=',$request->purchase_id)
                         ->update([
                             'purchase_date' => $request->purchase_date,
                             'purchase_reference' => $request->purchase_reference,
-                            'purchase_detail' => $request->purchase_detail,
+                            'customer_id' => $request->customer_id,
                             'purchase_total' => $request->product_total,
                             'purchase_stock' => $request->stock_place_id,
-                            'purchase_status_tranfer' => $request->purchase_status_tranfer
+                            'purchase_status_tranfer' => 0
                         ]);
                     $update_po_product = po_product::where('po_product_id','=',$request->po_product_id)
                         ->update([
@@ -121,35 +136,40 @@ class EditpurchaseController extends Controller
                             'product_number' => $request->product_number,
                             'product_total' => $request->product_total,
                         ]);
-                    if($request->purchase_status_tranfer == '1'){
-                        $product_id =null;
-                        $product_number =null;
-                        $query_po_product = po_product::select('po_product.product_id','po_product.product_number')
-                        ->where('po_product.purchase_id',$request->purchase_id)
-                        ->get();
+                    $update_customer = customer::where('customer_id','=',$request->customer_id)
+                        ->update([
+                            'customer_name' => $request->customer_name,
+                            'customer_detail' => $request->customer_detail,
+                        ]);
+                    // if($request->purchase_status_tranfer == '1'){
+                    //     $product_id =null;
+                    //     $product_number =null;
+                    //     $query_po_product = po_product::select('po_product.product_id','po_product.product_number')
+                    //     ->where('po_product.purchase_id',$request->purchase_id)
+                    //     ->get();
 
-                        foreach($query_po_product as $key){
-                            $product_id = $key->product_id;
-                            $product_number = $key->product_number;
-                        }
-                        $product_stock = null;
-                        $query_product_stock = products::join('users','users.user_id','=','products.user_id')
-                            ->join('stocks','products.product_id','=','stocks.product_id')
-                            ->select('stocks.stock_number')
-                            ->where('products.product_id',$product_id)
-                            ->where('stocks.stock_place_id',$request->stock_place_id)
-                            ->where('users.user_id',$user_id)
-                            ->get();
-                        foreach($query_product_stock as $key){
-                            $product_stock = $key->stock_number;
-                        }
-                        $data_new = $product_stock+$product_number;
-                        $update_stock = stocks::where('product_id','=',$product_id)
-                            ->where('stock_place_id','=',$request->stock_place_id)
-                            ->update([
-                                'stock_number' => $data_new,
-                            ]);
-                    }
+                    //     foreach($query_po_product as $key){
+                    //         $product_id = $key->product_id;
+                    //         $product_number = $key->product_number;
+                    //     }
+                    //     $product_stock = null;
+                    //     $query_product_stock = products::join('users','users.user_id','=','products.user_id')
+                    //         ->join('stocks','products.product_id','=','stocks.product_id')
+                    //         ->select('stocks.stock_number')
+                    //         ->where('products.product_id',$product_id)
+                    //         ->where('stocks.stock_place_id',$request->stock_place_id)
+                    //         ->where('users.user_id',$user_id)
+                    //         ->get();
+                    //     foreach($query_product_stock as $key){
+                    //         $product_stock = $key->stock_number;
+                    //     }
+                    //     $data_new = $product_stock+$product_number;
+                    //     $update_stock = stocks::where('product_id','=',$product_id)
+                    //         ->where('stock_place_id','=',$request->stock_place_id)
+                    //         ->update([
+                    //             'stock_number' => $data_new,
+                    //         ]);
+                    // }
                     DB::commit();
                     return redirect('/purchases')->with('alert' , "แก้ไขข้อมูลสำเร็จ");
                     } catch (\Exception $e) {

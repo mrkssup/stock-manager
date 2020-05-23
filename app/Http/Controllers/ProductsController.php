@@ -67,14 +67,14 @@ class ProductsController extends Controller
                         ->join('product_file','products.product_id','=','product_file.product_id')
                         ->select('products.product_id','products.product_code','products.product_name',
                         'products.product_price_buy','products.product_price_sell','stocks.stock_id'
-                        ,'stocks.stock_number','product_file.product_file_server')
+                        ,DB::raw('sum(stocks.stock_number) as stock_number'),'product_file.product_file_server')
                         ->where('users.user_id', $user_id);
         $query_products = $query_products->where(function($query) use ($search)
                         {
                             $query->where('products.product_code', 'LIKE' , '%'.$search.'%')
                                   ->orWhere('products.product_name', 'LIKE' , '%'.$search.'%');
                         });
-        $query_products = $query_products->get();
+        $query_products = $query_products->groupBy('products.product_id')->get();
         foreach($query_products as $key){
             $products[$i]['order'] = $i+1;
             $products[$i]['product_id'] = $key->product_id;

@@ -14,7 +14,7 @@ class purchase extends Model
             'purchase_code',
             'purchase_date',
             'purchase_reference',
-            'purchase_detail',
+            'customer_id',
             'purchase_tax',
             'purchase_total',
             'purchase_stock',

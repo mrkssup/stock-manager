@@ -98,8 +98,8 @@
                                             <tr>
                                                 <th scope="col">#</th>
                                                 <th scope="col">ประเภท</th>
-                                                <th scope="col">สถานะ</th>
                                                 <th scope="col">รายการเลขที่</th>
+                                                <th scope="col">สถานะ</th>
                                                 <th scope="col">จำนวน</th>
                                                 <th scope="col">จาก</th>
                                                 <th scope="col">ไป</th>
@@ -113,13 +113,16 @@
                                                     <td>{{ $card['order'] }}</td>
                                                     <td>{{ $card['type'] }}</td>
                                                     <td>{{ $card['code'] }}</td>
-                                                    @if( $card['status'] == '1' ){
+                                                    @if( $card['status'] == '1' )
+                                                        <td>กำลังดำเนินการ</td>
+                                                    @elseif( $card['status'] == '2' )
                                                         <td>สำเร็จ</td>
-                                                    }@elseif( $card['status'] == '0' ){
+                                                    @elseif( $card['status'] == '9' )
+                                                        <td>ยกเลิก</td>
+                                                    @elseif( $card['status'] == '0' )
                                                         <td>รอโอนสินค้า</td>
-                                                    }@else{
+                                                    @else
                                                        <td>{{ $card['status']}}</td>
-                                                    }
                                                     @endif
                                                     <td>{{ $card['number'] }}</td>
                                                     <td>{{ $card['stock_out'] }}</td>
@@ -149,6 +152,7 @@
 
 
 @section('page-js')
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
     <script>
         var msg = '{{Session::get('alert')}}';
         var exist = '{{Session::has('alert')}}';
