@@ -34,7 +34,6 @@
                                             class="form-control-rounded form-control @error('first_name') is-invalid @enderror"
                                             name="first_name" value="{{ old('first_name') }}" required autocomplete="first_name"
                                             autofocus>
-
                                     </div>
                                     <div class="form-group">
                                         <label for="last_name">นามสกุล</label>
@@ -42,7 +41,6 @@
                                             class="form-control-rounded form-control @error('last_name') is-invalid @enderror"
                                             name="last_name" value="{{ old('last_name') }}" required autocomplete="last_name"
                                             autofocus>
-
                                     </div>
                                     <div class="form-group">
                                         <label for="tel">เบอร์โทรศัพท์</label>
