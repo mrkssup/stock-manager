@@ -27,11 +27,6 @@
                                         <input id="username" type="email"
                                             class="form-control-rounded form-control @error('username') is-invalid @enderror"
                                             name="username" value="{{ old('username') }}" required autocomplete="username">
-                                        @error('username')
-                                        <span class="invalid-feedback" role="alert">
-                                            <strong>{{ $message }}</strong>
-                                        </span>
-                                        @enderror
                                     </div>
                                     <div class="form-group">
                                         <label for="first_name">ชื่อ</label>
@@ -39,11 +34,7 @@
                                             class="form-control-rounded form-control @error('first_name') is-invalid @enderror"
                                             name="first_name" value="{{ old('first_name') }}" required autocomplete="first_name"
                                             autofocus>
-                                        @error('first_name')
-                                        <span class="invalid-feedback" role="alert">
-                                            <strong>{{ $message }}</strong>
-                                        </span>
-                                        @enderror
+
                                     </div>
                                     <div class="form-group">
                                         <label for="last_name">นามสกุล</label>
@@ -51,11 +42,7 @@
                                             class="form-control-rounded form-control @error('last_name') is-invalid @enderror"
                                             name="last_name" value="{{ old('last_name') }}" required autocomplete="last_name"
                                             autofocus>
-                                        @error('last_name')
-                                        <span class="invalid-feedback" role="alert">
-                                            <strong>{{ $message }}</strong>
-                                        </span>
-                                        @enderror
+
                                     </div>
                                     <div class="form-group">
                                         <label for="tel">เบอร์โทรศัพท์</label>
@@ -63,11 +50,7 @@
                                             class="form-control-rounded form-control @error('tel') is-invalid @enderror"
                                             name="tel" value="{{ old('tel') }}" required autocomplete="tel"
                                             autofocus>
-                                        @error('tel')
-                                        <span class="invalid-feedback" role="alert">
-                                            <strong>{{ $message }}</strong>
-                                        </span>
-                                        @enderror
+
                                     </div>
                                     <div class="form-group">
                                         <label for="password">รหัสผ่าน</label>
@@ -75,11 +58,7 @@
                                             class="form-control-rounded form-control @error('password') is-invalid @enderror"
                                             name="password" required autocomplete="new-password">
 
-                                        @error('password')
-                                        <span class="invalid-feedback" role="alert">
-                                            <strong>{{ $message }}</strong>
-                                        </span>
-                                        @enderror
+
                                     </div>
                                     <div class="form-group">
                                         <label for="repassword">ยืนยันรหัสผ่าน</label>

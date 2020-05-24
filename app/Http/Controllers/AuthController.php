@@ -123,13 +123,13 @@ class AuthController extends Controller
    protected function set_config_email()
     {
       $config_data = array(
-           'driver'     => env('MAIL_DRIVER'),
-           'host'       => env('MAIL_HOST'),
-           'port'       => env('MAIL_PORT'),
+           'driver'     => env('MAIL_DRIVER','smtp'),
+           'host'       => env('MAIL_HOST','smtp.googlemail.com'),
+           'port'       => env('MAIL_PORT',465),
            'from'       => array('address' => 'noreply@stock-manager', 'name' => 'stock-manager'),
-           'username'   => env('MAIL_USERNAME'),
-           'password'   => env('MAIL_PASSWORD'),
-           'encryption' => env('MAIL_ENCRYPTION'),
+           'username'   => env('MAIL_USERNAME','supamaith.ma@gmail.com'),
+           'password'   => env('MAIL_PASSWORD','zwnwkuedsmgkfeku'),
+           'encryption' => env('MAIL_ENCRYPTION','ssl'),
            'sendmail'   => '/usr/sbin/sendmail -bs',
            'pretend'    => false,
            'stream' => [
@@ -140,7 +140,7 @@ class AuthController extends Controller
                ],
            ]
          );
-      Config::set('mail', $config_data);
+      $test =Config::set('mail', $config_data);
     }
 
     protected function get_host()
